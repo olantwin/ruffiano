@@ -446,7 +446,7 @@ def configure(run, ship_geo, Gfield=""):
             )
             detectorList.append(TargetStation)
 
-        #detectorList.append(Scintillator)
+        # detectorList.append(Scintillator)
         detectorList.append(MufluxSpectrometer)
 
     MuonTagger = ROOT.MuonTagger(
