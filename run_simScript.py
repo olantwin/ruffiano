@@ -12,18 +12,8 @@ from array import array
 
 DownScaleDiMuon = False
 
-# Default HNL parameters
-theHNLMass = 1.0 * u.GeV
-theProductionCouplings = theDecayCouplings = None
-
-# Default dark photon parameters
-theDPmass = 0.2 * u.GeV
-
-# Alpaca
-# motherMode = True
-
 mcEngine = "TGeant4"
-simEngine = "FixedTarget"  # "Genie" # Ntuple
+simEngine = "Pythia8"  # "Genie" # Ntuple
 
 inclusive = "c"  # True = all processes if "c" only ccbar -> HNL, if "b" only bbar -> HNL, if "bc" only Bc+/Bc- -> HNL, and for darkphotons: if meson = production through meson decays, pbrem = proton bremstrahlung, qcd = ffbar -> DP.
 
@@ -31,18 +21,11 @@ MCTracksWithHitsOnly = False  # copy particles which produced a hit and their hi
 MCTracksWithEnergyCutOnly = True  # copy particles above a certain kin energy cut
 MCTracksWithHitsOrEnergyCut = False  # or of above, factor 2 file size increase compared to MCTracksWithEnergyCutOnly
 
-charmonly = False  # option to be set with -A to enable only charm decays, charm x-sec measurement
-HNL = False
-
 inputFile = "/eos/experiment/ship/data/Charm/Cascade-parp16-MSTP82-1-MSEL4-978Bpot.root"
 defaultInputFile = True
 
 parser = ArgumentParser()
 group = parser.add_mutually_exclusive_group()
-parser.add_argument("--evtcalc", help="Use EventCalc", action="store_true")
-parser.add_argument(
-    "--Pythia6", dest="pythia6", help="Use Pythia6", required=False, action="store_true"
-)
 parser.add_argument(
     "--Pythia8", dest="pythia8", help="Use Pythia8", required=False, action="store_true"
 )
@@ -70,25 +53,7 @@ parser.add_argument(
     type=float,
 )
 parser.add_argument(
-    "-A",
-    dest="A",
-    help="b: signal from b, c: from c (default), bc: from Bc, or inclusive",
-    required=False,
-    default="c",
-)
-parser.add_argument(
-    "--Genie",
-    dest="genie",
-    help="Genie for reading and processing neutrino interactions",
-    required=False,
-    action="store_true",
-)
-parser.add_argument(
-    "--NuRadio",
-    dest="nuradio",
-    help="misuse GenieGenerator for neutrino radiography and geometry timing test",
-    required=False,
-    action="store_true",
+    "--FixedTarget", help="Use FixedTarget generator", action="store_true"
 )
 parser.add_argument(
     "--Ntuple",
@@ -119,13 +84,6 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
-    "--Nuage",
-    dest="nuage",
-    help="Use Nuage, neutrino generator of OPERA",
-    required=False,
-    action="store_true",
-)
-parser.add_argument(
     "--phiRandom",
     dest="phiRandom",
     help="only relevant for muon background generator, random phi",
@@ -138,82 +96,6 @@ parser.add_argument(
     help="Use cosmic generator, argument switch for cosmic generator 0 or 1",
     required=False,
     default=None,
-)
-parser.add_argument(
-    "--MuDIS",
-    dest="mudis",
-    help="Use muon deep inelastic scattering generator",
-    required=False,
-    action="store_true",
-)
-parser.add_argument(
-    "--RpvSusy",
-    dest="RPVSUSY",
-    help="Generate events based on RPV neutralino",
-    required=False,
-    action="store_true",
-)
-parser.add_argument(
-    "--DarkPhoton",
-    dest="DarkPhoton",
-    help="Generate dark photons",
-    required=False,
-    action="store_true",
-)
-parser.add_argument(
-    "--SusyBench",
-    dest="RPVSUSYbench",
-    help="Generate HP Susy",
-    required=False,
-    default=2,
-)
-parser.add_argument(
-    "-m",
-    "--mass",
-    dest="theMass",
-    help="Mass of hidden particle, default "
-    + str(theHNLMass)
-    + "GeV for HNL, "
-    + str(theDPmass)
-    + "GeV for DP",
-    required=False,
-    default=None,
-    type=float,
-)
-parser.add_argument(
-    "-c",
-    "--couplings",
-    "--coupling",
-    dest="thecouplings",
-    help="couplings 'U2e,U2mu,U2tau' or -c 'U2e,U2mu,U2tau' to set list of HNL couplings.\
- TP default for HNL, ctau=53.3km",
-    required=False,
-    default="0.447e-9,7.15e-9,1.88e-9",
-)
-parser.add_argument(
-    "-cp",
-    "--production-couplings",
-    dest="theprodcouplings",
-    help="production couplings 'U2e,U2mu,U2tau' to set the couplings for HNL production only",
-    required=False,
-    default=None,
-)
-parser.add_argument(
-    "-cd",
-    "--decay-couplings",
-    dest="thedeccouplings",
-    help="decay couplings  'U2e,U2mu,U2tau' to set the couplings for HNL decay only",
-    required=False,
-    default=None,
-)
-parser.add_argument(
-    "-e",
-    "--epsilon",
-    dest="theDPepsilon",
-    help="to set mixing parameter epsilon",
-    required=False,
-    default=0.00000008,
-    type=float,
 )
 parser.add_argument(
     "-n",
@@ -304,40 +186,6 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
-    "--stepMuonShield",
-    dest="muShieldStepGeo",
-    help="activate steps geometry for the muon shield",
-    required=False,
-    action="store_true",
-    default=False,
-)
-parser.add_argument(
-    "--coMuonShield",
-    dest="muShieldWithCobaltMagnet",
-    help="replace one of the magnets in the shield with 2.2T cobalt one, downscales other fields, works only for muShieldDesign >2",
-    required=False,
-    type=int,
-    default=0,
-)
-parser.add_argument(
-    "--noSC",
-    dest="SC_mag",
-    help="Deactivate SC muon shield. Configuration: 1 SC magnet (3*B_warm) + 3 warm magnets with inverted fields",
-    action="store_false",
-)
-parser.add_argument(
-    "--shieldName",
-    help="The name of the SC shield in the database. SC default: sc_v6, Warm default: combi",
-    default="sc_v6",
-)
-parser.add_argument(
-    "--MesonMother",
-    dest="MM",
-    help="Choose DP production meson source: pi0, eta, omega, eta1, eta11",
-    required=False,
-    default="pi0",
-)
-parser.add_argument(
     "--debug",
     help="1: print weights and field 2: make overlap check",
     required=False,
@@ -345,64 +193,19 @@ parser.add_argument(
     type=int,
     choices=range(0, 3),
 )
-parser.add_argument(
-    "--helium",
-    dest="decayVolMed",
-    help="Set Decay Volume medium to helium. NOOP, as default is helium",
-    action="store_const",
-    const="helium",
-    default="helium",
-)
-parser.add_argument(
-    "--vacuums",
-    dest="decayVolMed",
-    help="Set Decay Volume medium to vacuum(vessel structure changes)",
-    action="store_const",
-    const="vacuums",
-    default="helium",
-)
-
-parser.add_argument("--SND", dest="SND", help="Activate SND.", action="store_true")
-parser.add_argument(
-    "--noSND",
-    dest="SND",
-    help="Deactivate SND. NOOP, as it currently defaults to off.",
-    action="store_false",
-)
 
 options = parser.parse_args()
 
-if options.evtcalc:
-    simEngine = "EvtCalc"
-if options.pythia6:
-    simEngine = "Pythia6"
 if options.pythia8:
     simEngine = "Pythia8"
 if options.pg:
     simEngine = "PG"
-if options.genie:
-    simEngine = "Genie"
-if options.nuradio:
-    simEngine = "nuRadiography"
+if options.FixedTarget:
+    simEngine = "FixedTarget"
 if options.ntuple:
     simEngine = "Ntuple"
 if options.muonback:
     simEngine = "MuonBack"
-if options.nuage:
-    simEngine = "Nuage"
-if options.mudis:
-    simEngine = "muonDIS"
-if options.A != "c":
-    inclusive = options.A
-    if options.A == "b":
-        inputFile = "/eos/experiment/ship/data/Beauty/Cascade-run0-19-parp16-MSTP82-1-MSEL5-5338Bpot.root"
-    if options.A.lower() == "charmonly":
-        charmonly = True
-        HNL = False
-    if options.A not in ["b", "c", "bc", "meson", "pbrem", "qcd"]:
-        inclusive = True
-if options.MM:
-    motherMode = options.MM
 if options.cosmics:
     simEngine = "Cosmics"
     Opt_high = int(options.cosmics)
@@ -411,42 +214,14 @@ if options.inputFile:
         options.inputFile = None
     inputFile = options.inputFile
     defaultInputFile = False
-if options.RPVSUSY:
-    HNL = False
-if options.DarkPhoton:
-    HNL = False
-if not options.theMass:
-    if options.DarkPhoton:
-        options.theMass = theDPmass
-    else:
-        options.theMass = theHNLMass
-if options.thecouplings:
-    theCouplings = [float(c) for c in options.thecouplings.split(",")]
-if options.theprodcouplings:
-    theProductionCouplings = [float(c) for c in options.theprodcouplings.split(",")]
-if options.thedeccouplings:
-    theDecayCouplings = [float(c) for c in options.thedeccouplings.split(",")]
 if options.testFlag:
     inputFile = "$FAIRSHIP/files/Cascade-parp16-MSTP82-1-MSEL4-76Mpot_1_5000.root"
 
 
-# sanity check
-if (
-    (HNL and options.RPVSUSY)
-    or (HNL and options.DarkPhoton)
-    or (options.DarkPhoton and options.RPVSUSY)
-):
-    print("cannot have HNL and SUSY or DP at the same time, abort")
-    sys.exit(2)
-
-if (simEngine == "Genie" or simEngine == "nuRadiography") and defaultInputFile:
-    inputFile = "/eos/experiment/ship/data/GenieEvents/genie-nu_mu.root"
 if simEngine == "muonDIS" and defaultInputFile:
     print("input file required if simEngine = muonDIS")
     print(" for example -f  /eos/experiment/ship/data/muonDIS/muonDis_1.root")
     sys.exit()
-if simEngine == "Nuage" and not inputFile:
-    inputFile = "Numucc.root"
 
 print("FairShip setup for", simEngine, "to produce", options.nEvents, "events")
 if (simEngine == "Ntuple" or simEngine == "MuonBack") and defaultInputFile:
@@ -459,9 +234,6 @@ ROOT.gRandom.SetSeed(
     options.theSeed
 )  # this should be propagated via ROOT to Pythia8 and Geant4VMC
 shipRoot_conf.configure(0)  # load basic libraries, prepare atexit for python
-# - muShieldDesign = 7  # 7 = short design+magnetized hadron absorber
-# - targetOpt      = 5  # 0=solid   >0 sliced, 5: 5 pieces of tungsten, 4 H20 slits, 17: Mo + W +H2O (default)
-#   nuTauTargetDesign = 3 #3 = 2018 design, 4 = not magnetized target + spectrometer
 ship_geo = ConfigRegistry.loadpy(
     "$HOME/SHiP_Software/ruffiano/charm-geometry_config.py",
 )
@@ -471,8 +243,6 @@ if simEngine == "PG":
     tag = simEngine + "_" + str(options.pID) + "-" + mcEngine
 else:
     tag = simEngine + "-" + mcEngine
-if charmonly:
-    tag = simEngine + "CharmOnly-" + mcEngine
 if options.eventDisplay:
     tag = tag + "_D"
 if not os.path.exists(options.outputDir):
@@ -510,111 +280,35 @@ primGen = ROOT.FairPrimaryGenerator()
 if simEngine == "Pythia8":
     primGen.SetTarget(ship_geo.target.z0, 0.0)
     # -----Pythia8--------------------------------------
-    if HNL or options.RPVSUSY:
-        P8gen = ROOT.HNLPythia8Generator()
-        import pythia8_conf
-
-        if HNL:
-            print("Generating HNL events of mass %.3f GeV" % options.theMass)
-            if theProductionCouplings is None and theDecayCouplings is None:
-                print("and with couplings=", theCouplings)
-                theProductionCouplings = theDecayCouplings = theCouplings
-            elif theProductionCouplings is not None and theDecayCouplings is not None:
-                print("and with couplings", theProductionCouplings, "at production")
-                print("and", theDecayCouplings, "at decay")
-            else:
-                raise ValueError(
-                    "Either both production and decay couplings must be specified, or neither."
-                )
-            pythia8_conf.configure(
-                P8gen,
-                options.theMass,
-                theProductionCouplings,
-                theDecayCouplings,
-                inclusive,
-                options.deepCopy,
-            )
-        if options.RPVSUSY:
-            print("Generating RPVSUSY events of mass %.3f GeV" % theHNLMass)
-            print("and with couplings=[%.3f,%.3f]" % (theCouplings[0], theCouplings[1]))
-            print("and with stop mass=%.3f GeV\n" % theCouplings[2])
-            pythia8_conf.configurerpvsusy(
-                P8gen,
-                options.theMass,
-                [theCouplings[0], theCouplings[1]],
-                theCouplings[2],
-                options.RPVSUSYbench,
-                inclusive,
-                options.deepCopy,
-            )
-        P8gen.SetParameters("ProcessLevel:all = off")
-        if inputFile:
-            ut.checkFileExists(inputFile)
-            # read from external file
-            P8gen.UseExternalFile(inputFile, options.firstEvent)
-    if options.DarkPhoton:
-        P8gen = ROOT.DPPythia8Generator()
-        if inclusive == "qcd":
-            P8gen.SetDPId(4900023)
-        else:
-            P8gen.SetDPId(9900015)
-        import pythia8darkphoton_conf
-
-        passDPconf = pythia8darkphoton_conf.configure(
-            P8gen,
-            options.theMass,
-            options.theDPepsilon,
-            inclusive,
-            motherMode,
-            options.deepCopy,
-        )
-        if passDPconf != 1:
-            sys.exit()
-    if HNL or options.RPVSUSY or options.DarkPhoton:
-        P8gen.SetSmearBeam(1 * u.cm)  # finite beam size
-        P8gen.SetLmin(
-            (ship_geo.Chamber1.z - ship_geo.chambers.Tub1length) - ship_geo.target.z0
-        )
-        P8gen.SetLmax(ship_geo.TrackStation1.z - ship_geo.target.z0)
-    if charmonly:
-        primGen.SetTarget(0.0, 0.0)  # vertex is set in pythia8Generator
-        ut.checkFileExists(inputFile)
-        if ship_geo.Box.gausbeam:
-            primGen.SetBeam(
-                0.0, 0.0, 0.5, 0.5
-            )  # more central beam, for hits in downstream detectors
-            primGen.SmearGausVertexXY(True)  # sigma = x
-        else:
-            primGen.SetBeam(
-                0.0, 0.0, ship_geo.Box.TX - 1.0, ship_geo.Box.TY - 1.0
-            )  # Uniform distribution in x/y on the target (0.5 cm of margin at both sides)
-            primGen.SmearVertexXY(True)
-        P8gen = ROOT.Pythia8Generator()
-        P8gen.UseExternalFile(inputFile, options.firstEvent)
-        P8gen.SetTarget(
-            "volTarget_1", 0.0, 0.0
-        )  # will distribute PV inside target, beam offset x=y=0.
+    primGen.SetTarget(0.0, 0.0)  # vertex is set in pythia8Generator
+    ut.checkFileExists(inputFile)
+    if ship_geo.Box.gausbeam:
+        primGen.SetBeam(
+            0.0, 0.0, 0.5, 0.5
+        )  # more central beam, for hits in downstream detectors
+        primGen.SmearGausVertexXY(True)  # sigma = x
+    else:
+        primGen.SetBeam(
+            0.0, 0.0, ship_geo.Box.TX - 1.0, ship_geo.Box.TY - 1.0
+        )  # Uniform distribution in x/y on the target (0.5 cm of margin at both sides)
+        primGen.SmearVertexXY(True)
+    P8gen = ROOT.Pythia8Generator()
+    P8gen.UseExternalFile(inputFile, options.firstEvent)
+    P8gen.SetTarget(
+        "target_1", 0.0, 0.0
+    )  # will distribute PV inside target, beam offset x=y=0.
     # pion on proton 500GeV
     # P8gen.SetMom(500.*u.GeV)
     # P8gen.SetId(-211)
     primGen.AddGenerator(P8gen)
 if simEngine == "FixedTarget":
     P8gen = ROOT.FixedTargetGenerator()
-    P8gen.SetTarget("volTarget_1", 0.0, 0.0)
+    P8gen.SetTarget("target_1", 0.0, 0.0)
     P8gen.SetMom(400.0 * u.GeV)
     P8gen.SetEnergyCut(0.0)
     P8gen.SetHeartBeat(100000)
     P8gen.SetG4only()
     primGen.AddGenerator(P8gen)
-if simEngine == "Pythia6":
-    # set muon interaction close to decay volume
-    primGen.SetTarget(ship_geo.target.z0 + ship_geo.muShield.length, 0.0)
-    # -----Pythia6-------------------------
-    test = ROOT.TPythia6()  # don't know any other way of forcing to load lib
-    P6gen = ROOT.tPythia6Generator()
-    P6gen.SetMom(50.0 * u.GeV)
-    P6gen.SetTarget("gamma/mu+", "n0")  # default "gamma/mu-","p+"
-    primGen.AddGenerator(P6gen)
 
 # -----Particle Gun-----------------------
 if simEngine == "PG":
@@ -715,7 +409,7 @@ if options.dryrun:  # Early stop after setting up Pythia 8
     sys.exit(0)
 gMC = ROOT.TVirtualMC.GetMC()
 fStack = gMC.GetStack()
-EnergyCut = 10.0 * u.MeV if options.mudis else 100.0 * u.MeV
+EnergyCut = 100.0 * u.MeV
 
 if MCTracksWithHitsOnly:
     fStack.SetMinPoints(1)
@@ -806,16 +500,6 @@ rtime = timer.RealTime()
 ctime = timer.CpuTime()
 print(" ")
 print("Macro finished successfully.")
-if "P8gen" in globals():
-    if HNL:
-        print("number of retries, events without HNL ", P8gen.nrOfRetries())
-    elif options.DarkPhoton:
-        print("number of retries, events without Dark Photons ", P8gen.nrOfRetries())
-        print(
-            "total number of dark photons (including multiple meson decays per single collision) ",
-            P8gen.nrOfDP(),
-        )
-
 print("Output file is ", outFile)
 print("Parameter file is ", parFile)
 print("Real time ", rtime, " s, CPU time ", ctime, "s")
