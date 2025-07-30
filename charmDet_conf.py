@@ -7,23 +7,6 @@ from ShipGeoConfig import ConfigRegistry
 detectorList = []
 
 
-def getParameter(x, ship_geo, latestCharmGeo):
-    lv = x.split(".")
-    last = lv[len(lv) - 1]
-    top = ""
-    for l in range(len(lv) - 1):
-        top += lv[l]
-        if l < len(lv) - 2:
-            top += "."
-    a = getattr(ship_geo, top)
-    if hasattr(a, last):
-        return getattr(a, last)
-        # not in the list of recorded parameteres. probably added after
-        # creation of file. Check newest geometry_config:
-    a = getattr(latestCharmGeo, top)
-    return getattr(a, last)
-
-
 def configure(run, ship_geo, Gfield=""):
     latestCharmGeo = ConfigRegistry.loadpy(
         "$HOME/SHiP_Software/ruffiano/charm-geometry_config.py"
