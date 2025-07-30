@@ -270,6 +270,46 @@ rtdb = run.GetRuntimeDb()
 import charmDet_conf as shipDet_conf
 
 modules = shipDet_conf.configure(run, ship_geo)
+
+
+def addScoringPlane(
+    anindex=0, xpos=0.0, ypos=0.0, zpos=0.0, xhalfw=500.0, yhalfh=500.0
+):
+    izstring = "ScoringPlane" + str(anindex)
+    # put the 3rd arg as True if you want to stop particles being tracked at this plane
+    scoringplane = ROOT.ScoringPlane(
+        izstring, ROOT.kTRUE, ROOT.kFALSE, xhalfw, yhalfh, 0.1
+    )
+    scoringplane.SetVetoPointName("sco" + str(anindex) + "_")
+    scoringplane.SetXYZposition(xpos, ypos, zpos)
+    print(
+        "    defined "
+        + izstring
+        + " at x,y,z = "
+        + str(xpos)
+        + " , "
+        + str(ypos)
+        + " , "
+        + str(zpos)
+        + " cm (halfW/halfH = "
+        + str(xhalfw)
+        + " , "
+        + str(yhalfh)
+        + ")"
+    )
+    return scoringplane
+
+
+scoring_planes = [
+    addScoringPlane(1, zpos=0.5 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
+    addScoringPlane(2, zpos=1 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
+    addScoringPlane(3, zpos=6 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
+    addScoringPlane(4, zpos=6.5 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
+]
+
+for scoring_plane in scoring_planes:
+    run.AddModule(scoring_plane)
+
 # -----Create PrimaryGenerator--------------------------------------
 primGen = ROOT.FairPrimaryGenerator()
 if simEngine == "Pythia8":
