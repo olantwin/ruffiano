@@ -218,11 +218,6 @@ if options.testFlag:
     inputFile = "$FAIRSHIP/files/Cascade-parp16-MSTP82-1-MSEL4-76Mpot_1_5000.root"
 
 
-if simEngine == "muonDIS" and defaultInputFile:
-    print("input file required if simEngine = muonDIS")
-    print(" for example -f  /eos/experiment/ship/data/muonDIS/muonDis_1.root")
-    sys.exit()
-
 print("FairShip setup for", simEngine, "to produce", options.nEvents, "events")
 if (simEngine == "Ntuple" or simEngine == "MuonBack") and defaultInputFile:
     print("input file required if simEngine = Ntuple or MuonBack")
@@ -297,9 +292,6 @@ if simEngine == "Pythia8":
     P8gen.SetTarget(
         "target_1", 0.0, 0.0
     )  # will distribute PV inside target, beam offset x=y=0.
-    # pion on proton 500GeV
-    # P8gen.SetMom(500.*u.GeV)
-    # P8gen.SetId(-211)
     primGen.AddGenerator(P8gen)
 if simEngine == "FixedTarget":
     P8gen = ROOT.FixedTargetGenerator()
@@ -318,31 +310,6 @@ if simEngine == "PG":
     myPgun.SetXYZ(0.0 * u.cm, 0.0 * u.cm, 0.0 * u.cm)
     myPgun.SetThetaRange(0, 0)  # // Polar angle in lab system range [degree]
     primGen.AddGenerator(myPgun)
-# -----muon DIS Background------------------------
-if simEngine == "muonDIS":
-    ut.checkFileExists(inputFile)
-    primGen.SetTarget(0.0, 0.0)
-    DISgen = ROOT.MuDISGenerator()
-    # from nu_tau detector to tracking station 2
-    # mu_start, mu_end =  ship_geo.tauMudet.zMudetC,ship_geo.TrackStation2.z
-    #
-    # in front of UVT up to tracking station 1
-    mu_start, mu_end = (
-        ship_geo.Chamber1.z - ship_geo.chambers.Tub1length - 10.0 * u.cm,
-        ship_geo.TrackStation1.z,
-    )
-    print("MuDIS position info input=", mu_start, mu_end)
-    DISgen.SetPositions(mu_start, mu_end)
-    DISgen.Init(inputFile, options.firstEvent)
-    primGen.AddGenerator(DISgen)
-    options.nEvents = min(options.nEvents, DISgen.GetNevents())
-    print(
-        "Generate ",
-        options.nEvents,
-        " with DIS input",
-        " first event",
-        options.firstEvent,
-    )
 if simEngine == "Ntuple":
     # reading previously processed muon events, [-50m - 50m]
     ut.checkFileExists(inputFile)
@@ -564,35 +531,6 @@ if simEngine == "MuonBack":
     rc1 = os.system("rm  " + outFile)
     rc2 = os.system("mv " + tmpFile + " " + outFile)
     fin.SetWritable(False)  # bpyass flush error
-
-if simEngine == "muonDIS":
-    temp_filename = outFile.replace(".root", "_tmp.root")
-
-    with (
-        ROOT.TFile.Open(outFile, "read") as f_outputfile,
-        ROOT.TFile.Open(inputFile, "read") as f_muonfile,
-        ROOT.TFile.Open(temp_filename, "recreate") as f_temp,
-    ):
-        output_tree = f_outputfile.Get("cbmsim")
-
-        muondis_tree = f_muonfile.Get("DIS")
-
-        new_tree = output_tree.CloneTree(0)
-
-        cross_section = array("f", [0.0])
-        cross_section_leaf = new_tree.Branch(
-            "CrossSection", cross_section, "CrossSection/F"
-        )
-
-        for output_event, muondis_event in zip(output_tree, muondis_tree):
-            mu = muondis_event.InMuon[0]
-            cross_section[0] = mu[10]
-            new_tree.Fill()
-
-        new_tree.Write("", ROOT.TObject.kOverwrite)
-
-    os.replace(temp_filename, outFile)
-    print("Successfully added DISCrossSection to the output file:", outFile)
 
 # ------------------------------------------------------------------------
 import checkMagFields
