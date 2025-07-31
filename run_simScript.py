@@ -8,7 +8,6 @@ import shipRoot_conf
 import rootUtils as ut
 from ShipGeoConfig import ConfigRegistry
 from argparse import ArgumentParser
-from array import array
 
 DownScaleDiMuon = False
 
