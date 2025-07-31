@@ -1,15 +1,36 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import ROOT
 import argparse
+from array import array
 
 
 DETECTORS = [
-"target_1",
-"ScoringPlane1_box_1",
-"ScoringPlane2_box_1",
-"ScoringPlane3_box_1",
-"ScoringPlane4_box_1",
+    "target_1",
+    "ScoringPlane1_box_1",
+    "ScoringPlane2_box_1",
+    "ScoringPlane3_box_1",
+    "ScoringPlane4_box_1",
 ]
+
+
+def transform_xyzpoint(matrix, point):
+    """
+    Transform a ROOT.Math.XYZPoint using a TGeoMatrix.
+
+    Parameters:
+        matrix: a TGeoMatrix (or its subclass, e.g. TGeoHMatrix, TGeoCombiTrans, etc.)
+        point:  a ROOT.Math.XYZPoint instance
+
+    Returns:
+        A new ROOT.Math.XYZPoint that is a transformation of the input point.
+    """
+    # Convert point to C++-style array (Python float)
+    local = array("d", [point.x(), point.y(), point.z()])
+    master = array("d", [0.0, 0.0, 0.0])
+    matrix.LocalToMaster(local, master)  # apply transformation
+    return ROOT.Math.XYZPoint(master[0], master[1], master[2])
+
 
 def main():
     """Run simple event display."""
@@ -31,7 +52,25 @@ def main():
     args = parser.parse_args()
     with ROOT.TFile.Open(args.inputfile) as f, ROOT.TFile.Open(args.geofile) as g:
         tree = f["cbmsim"]
-        
+        geo = g["FAIRGeom"]
+        nodes = []
+        for detector in DETECTORS:
+            if geo.cd(detector):
+                nodes.append(geo.GetCurrentNode())
+
+        volumes = [node.GetVolume() for node in nodes]
+        matrices = [node.GetMatrix() for node in nodes]
+        shapes = [volume.GetShape() for volume in volumes]
+
+        corners = []
+
+        for shape, matrix in zip(shapes, matrices):
+            corner1 = ROOT.Math.XYZPoint(shape.GetDX(), shape.GetDY(), shape.GetDZ())
+            corner1_global = transform_xyzpoint(matrix, corner1)
+            corner2 = ROOT.Math.XYZPoint(-shape.GetDX(), -shape.GetDY(), -shape.GetDZ())
+            corner2_global = transform_xyzpoint(matrix, corner2)
+            corners.append((corner1_global, corner2_global))
+
         for i, event in enumerate(tree):
             position_dict = {}
             for hit in event.sco1_Point:
@@ -99,11 +138,36 @@ def main():
             axes[0].set_xlim(-100, 800)
             axes[0].set_ylim(-200, +200)
             axes[1].set_ylim(-200, +200)
+
+            for corner1, corner2 in corners:
+                xmin, xmax = sorted([corner1.x(), corner2.x()])
+                ymin, ymax = sorted([corner1.y(), corner2.y()])
+                zmin, zmax = sorted([corner1.z(), corner2.z()])
+                width = xmax - xmin
+                height = ymax - ymin
+                length = zmax - zmin
+                rect = patches.Rectangle(
+                    (zmin, xmin),
+                    length,
+                    width,
+                    linewidth=2,
+                    edgecolor="r",
+                    facecolor="none",
+                )
+                axes[0].add_patch(rect)
+                rect = patches.Rectangle(
+                    (zmin, ymin),
+                    length,
+                    height,
+                    linewidth=2,
+                    edgecolor="r",
+                    facecolor="none",
+                )
+                axes[1].add_patch(rect)
             plt.show()
             if args.plots:
                 fig.savefig(f"event_display_{i}.png")
                 fig.savefig(f"event_display_{i}.pdf")
-            break
 
 
 if __name__ == "__main__":
