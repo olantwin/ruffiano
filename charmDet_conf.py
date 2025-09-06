@@ -8,9 +8,6 @@ detectorList = []
 
 
 def configure(run, ship_geo, Gfield=""):
-    latestCharmGeo = ConfigRegistry.loadpy(
-        "$HOME/SHiP_Software/ruffiano/charm-geometry_config.py"
-    )
     # -----Create media-------------------------------------------------
     run.SetMaterials("media.geo")  # Materials
 

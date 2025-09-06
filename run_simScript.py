@@ -229,7 +229,7 @@ ROOT.gRandom.SetSeed(
 )  # this should be propagated via ROOT to Pythia8 and Geant4VMC
 shipRoot_conf.configure(0)  # load basic libraries, prepare atexit for python
 ship_geo = ConfigRegistry.loadpy(
-    "$HOME/SHiP_Software/ruffiano/charm-geometry_config.py",
+    "$FAIRSHIP../ruffiano/charm-geometry_config.py",
 )
 
 # Output file name, add dy to be able to setup geometry with ambiguities.
@@ -409,6 +409,11 @@ if options.eventDisplay:
     run.SetStoreTraj(ROOT.kTRUE)
 else:
     run.SetStoreTraj(ROOT.kFALSE)
+
+# -----Configure external decayer globally------------------------------------
+run.SetPythiaDecayer('DecayConfigTEvtGen.C')
+print('Using TEvtGenDecayer for J/psi and quarkonium decays with EvtGen')
+
 # -----Initialize simulation run------------------------------------
 run.Init()
 if options.dryrun:  # Early stop after setting up Pythia 8
