@@ -300,6 +300,7 @@ def addScoringPlane(
 
 
 scoring_planes = [
+    addScoringPlane(0, zpos=0.263 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
     addScoringPlane(1, zpos=0.5 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
     addScoringPlane(2, zpos=1 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
     addScoringPlane(3, zpos=6 * u.m, xhalfw=1 * u.m, yhalfh=1 * u.m),
