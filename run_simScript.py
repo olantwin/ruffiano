@@ -335,11 +335,11 @@ if simEngine == "Pythia8":
     primGen.AddGenerator(P8gen)
 if simEngine == "FixedTarget":
     P8gen = ROOT.FixedTargetGenerator()
-    P8gen.SetTarget("target_1", 0.0, 0.0)
+    P8gen.SetTargetCoordinates(-123.8100 * u.cm, 26.1900 * u.cm)
     P8gen.SetMom(400.0 * u.GeV)
-    P8gen.SetEnergyCut(0.0)
-    P8gen.SetHeartBeat(100000)
-    P8gen.SetG4only()
+    P8gen.SetEnergyCut(0.1 * u.GeV)
+    P8gen.SetHeartBeat(100)
+    # P8gen.SetG4only()
     primGen.AddGenerator(P8gen)
 
 # -----Particle Gun-----------------------
